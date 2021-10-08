@@ -139,3 +139,7 @@ cython_debug/
 
 .idea/
 .DS_Store
+db-data/
+later.txt
+commands.txt
+
