@@ -17,6 +17,7 @@ import numpy as np
 import psycopg2
 import torch
 from loguru import logger
+from psycopg2.extras import RealDictCursor
 
 from src.config import Config, config
 
@@ -118,6 +119,14 @@ class DBWriter:
         with self.conn:
             with self.conn.cursor() as cur:
                 cur.execute(sql, (detection_id, coords, class_, conf, image_id))
+
+    def select_images_between_timestamps(self, from_: datetime, to: datetime, detector_ran: bool) -> list[psycopg2.extras.RealDictRow]:
+        self._reopen_conn_if_closed()
+        sql = """SELECT * FROM images WHERE timestamp BETWEEN %s AND %s AND detector_ran = %s ORDER BY timestamp;"""
+        with self.conn:
+            with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(sql, (from_, to, detector_ran))
+                return cur.fetchall()
 
     def select_high_conf_snapshots(self):
         self._reopen_conn_if_closed()
