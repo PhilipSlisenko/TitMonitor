@@ -1,5 +1,6 @@
 import argparse
 from datetime import datetime
+import uuid
 
 from src.config import config
 from src.main import BufferlessVideoCapture, DiscWriter, DBWriter
@@ -26,7 +27,7 @@ def main():
     while True:
         frame = cap.read()
         now = datetime.now()
-        image_id = now.strftime("%Y-%m-%d--%H-%M-%S-%f")
+        image_id = str(uuid.uuid4())
         image_filename = now.strftime("%Y-%m-%d--%H-%M-%S-%f") + '.jpg'
         disc_writer.save_image(frame, image_filename)
         db_writer.insert_image_metadata(image_id, now, image_filename)
