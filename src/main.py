@@ -18,7 +18,7 @@ import psycopg2
 import torch
 from loguru import logger
 
-from src.config import Config
+from src.config import Config, config
 
 
 class BufferlessVideoCapture:
@@ -103,6 +103,7 @@ class DBWriter:
         if self.conn.closed:
             self._open_connection()
 
+    # TODO: add threading
     def insert_image_metadata(self, image_id: str, timestamp: datetime, filename: str):
         self._reopen_conn_if_closed()
         sql = """INSERT INTO images(image_id, timestamp, filename) VALUES(%s, %s, %s);"""
@@ -110,6 +111,7 @@ class DBWriter:
             with self.conn.cursor() as cur:
                 cur.execute(sql, (image_id, timestamp, filename))
 
+    # TODO: add threading
     def insert_detection(self, detection_id: str, coords: datetime, class_: str, conf: float, image_id: str):
         self._reopen_conn_if_closed()
         sql = """INSERT INTO detections(detection_id, coords, class, conf, image_id) VALUES(%s, %s, %s, %s, %s);"""
@@ -117,10 +119,22 @@ class DBWriter:
             with self.conn.cursor() as cur:
                 cur.execute(sql, (detection_id, coords, class_, conf, image_id))
 
+    def select_high_conf_snapshots(self):
+        self._reopen_conn_if_closed()
+        sql = """select *
+                 from images inner join detections using(image_id)
+                 where conf>=0.80
+                 order by conf desc
+                 limit 1000;"""
+        with self.conn:
+            from psycopg2.extras import RealDictCursor
+            with self.conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(sql)
+                return cur.fetchall()
+
 
 class Operator:
     def __init__(self, config: Config):
-        logger.info('Initing operator')
         self.cap = BufferlessVideoCapture(config.stream_url)
         self.disc_writer = DiscWriter(config.root_dir_to_save_images)
         self.db_writer = DBWriter(config.dbhost, config.dbname, config.dbuser, config.dbpassword)

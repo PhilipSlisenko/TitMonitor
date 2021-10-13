@@ -4,7 +4,8 @@ CREATE DATABASE camera;
 CREATE TABLE images(
    image_id VARCHAR PRIMARY KEY,
    timestamp TIMESTAMP,
-   filename VARCHAR
+   filename VARCHAR,
+   detector_ran BOOLEAN DEFAULT false
 );
 CREATE TABLE detections(
     detection_id VARCHAR PRIMARY KEY,
